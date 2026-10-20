@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S2Watch Rezept-Testseite</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding: 16px; font: 16px/1.5 system-ui, sans-serif; background: #111827; color: #e5e7eb; }
+  main { max-width: 860px; margin: 0 auto; }
+  .s2-player { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; cursor: pointer; }
+  .s2-player video { width: 100%; height: 100%; display: block; }
+  .s2-hint { position: absolute; inset: auto 0 0 0; padding: 8px 12px; background: rgba(0,0,0,.6); font-size: 14px; }
+  small { color: #9ca3af; }
+</style>
+</head>
+<body>
+<main>
+  <h1>S2Watch &ndash; Testseite f&uuml;r die Rezept-Suche</h1>
+  <p>Diese Seite pr&uuml;ft den Selbstheilungs-Weg &bdquo;Vom Handy&ldquo; der App S2Watch Ende zu Ende.
+     Der Stream steht absichtlich nur in einem Muster, das die eingebaute Erkennung der App nicht kennt.</p>
+
+  <!-- Das Muster: protokollrelative Playlist-Adresse im data-url-Attribut eines eigenen Player-Divs.
+       Die App-Kette (RemoteWebResolver) sucht nur absolute http(s)-Adressen im Seitentext, JW-/video-/
+       og-/JSON-LD-Muster und iframes; dieses Div kennt sie nicht. -->
+  <div id="s2-stage" class="s2-player" data-url="//test-streams.mux.dev/x36xhzz/x36xhzz.m3u8">
+    <video id="s2-video" muted playsinline controls></video>
+    <div class="s2-hint">Zum Abspielen antippen</div>
+  </div>
+
+  <p><small>Video: &bdquo;Big Buck Bunny&ldquo; &copy; 2008 Blender Foundation (peach.blender.org),
+     lizenziert unter Creative Commons Namensnennung 3.0 (CC BY 3.0). Als HLS-Teststream bereitgestellt
+     von Mux (test-streams.mux.dev). Abspielen per hls.js (Apache-2.0).</small></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<script>
+(function () {
+  var stage = document.getElementById('s2-stage');
+  var video = document.getElementById('s2-video');
+  var started = false;
+
+  function start() {
+    if (started) return;
+    started = true;
+    var src = window.location.protocol + stage.getAttribute('data-url');
+    if (window.Hls && window.Hls.isSupported()) {
+      var hls = new window.Hls();
+      hls.loadSource(src);
+      hls.attachMedia(video);
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src;
+    }
+    var p = video.play();
+    if (p && p.catch) p.catch(function () {});
+  }
+
+  // Absicht: am Fernseher (Android-WebView der App) fragt die Seite den Stream ERST nach einem Tipp
+  // an. Ohne Tipp findet deshalb weder die Kette noch der Abfang der App etwas -> der Meldedialog
+  // erscheint. Der Pruef-Browser im Workflow (Playwright, navigator.webdriver = true) startet
+  // dagegen sofort und liefert so den Mitschnitt, gegen den das Rezept geprueft wird.
+  if (navigator.webdriver) start();
+  stage.addEventListener('click', start);
+})();
+</script>
+</body>
+</html>
